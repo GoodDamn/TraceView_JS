@@ -3,6 +3,7 @@
     <head>
         <meta charset="utf-8" />
         <style>
+            @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@600&display=swap');
         </style>
         <script type="text/javascript">
 
@@ -13,6 +14,30 @@
             var isTouchDowned = false;
 
             var mLines = [];
+
+            function completion() {
+                let divComp = document.createElement("div");
+
+                divComp.setAttribute(
+                    "style",
+                    `width: ${getWidth()}px;
+                    height: ${getHeight()}px;
+                    background-color: #aa000000;
+                    position:absolute;`);
+
+                let textView = document.createElement("span");
+
+                textView.innerText = "Level completed!";
+                textView.setAttribute(
+                    "style",
+                    `color: #ffffff;
+                    font-family: 'Open Sans', sans-serif;
+                    font-weight: 600;`);
+
+                divComp.appendChild(textView);
+
+                root.appendChild(divComp);
+            }
 
             function touchHandler(line, x, y) {
                 console.log("EVENT:LOAD::TOUCH::DOWN");
@@ -141,7 +166,8 @@
                         }
                     }
 
-                    alert("COMPLETED");
+                    completion();
+
                 };
 
                 line.addEventListener("mouseup", handleCancel);
@@ -194,9 +220,9 @@
                 root.style.backgroundColor = "#000325";
 
                 let maxStrokeWidth = 25;
-                let width = getWidth() - maxStrokeWidth;
-                let height = getHeight() - maxStrokeWidth;
-                let maxLength = Math.min(width,height) / 8;
+                let maxLength = getWidth() * 0.1;
+                let width = getWidth() - maxStrokeWidth - maxLength;
+                let height = getHeight() - maxStrokeWidth - maxLength;
 
                 let maxRot = 180;
 
@@ -216,12 +242,15 @@
                 }
 
                 console.log("EVENT:LOAD::FINISH");
+                completion();
             }
 
         </script>
     </head>
 
-    <body onload="onLoad()" id="main">
+    <body onload="onLoad()" id="main"
+          ondragstart="return false;"
+          ondrop="return false;">
 
     </body>
 
