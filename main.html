@@ -1,257 +1,333 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta charset="utf-8" />
-        <style>
-            @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@600&display=swap');
-        </style>
-        <script type="text/javascript">
+<head>
+    <meta charset="utf-8" />
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@600&display=swap');
 
-            let root;
+        body {
+            overflow: hidden;
+            margin: 0;
+        }
+    </style>
+    <script type="text/javascript">
 
-            const DEBUG_MODE = false;
+        let root;
 
-            var isTouchDowned = false;
+        const DEBUG_MODE = false;
 
-            var mLines = [];
+        var calcWithX = true;
 
-            function completion() {
-                let divComp = document.createElement("div");
+        var isTouchDowned = false;
 
-                divComp.setAttribute(
-                    "style",
-                    `width: ${getWidth()}px;
+        var mLines = [];
+
+        function rgbStr(r, g, b) {
+            return `rgb(${[r, g, b].join(',')})`;
+        }
+
+        function completion() {
+            let divComp = document.createElement("div");
+
+            divComp.setAttribute(
+                "style",
+                `width: ${getWidth()}px;
                     height: ${getHeight()}px;
-                    background-color: #aa000000;
+                    backdrop-filter: blur(18px);
+                    text-align: center;
+                    diplay: table-cell;
+                    vertical-align: middle;
                     position:absolute;`);
 
-                let textView = document.createElement("span");
+            let textView = document.createElement("span");
 
-                textView.innerText = "Level completed!";
-                textView.setAttribute(
-                    "style",
-                    `color: #ffffff;
-                    font-family: 'Open Sans', sans-serif;
-                    font-weight: 600;`);
+            textView.innerText = "Level completed!";
+            textView.setAttribute(
+                "style",
+                `color: #ffffff;
+                            font-family: 'Open Sans', sans-serif;
+                            font-size: 50px;
+                            -webkit-user-select: none; /* Safari */
+                            -ms-user-select: none; /* IE 10 and IE 11 */
+                            user-select: none; /* Standard syntax */
+                            font-weight: 600;`);
 
-                divComp.appendChild(textView);
+            divComp.appendChild(textView);
 
-                root.appendChild(divComp);
-            }
+            let restart = document.createElement("button");
+            restart.setAttribute(
+                "style",
+                `background-color: rgba(0,0,0,0);
+                    border:none;
+                    cursor:pointer;`);
 
-            function touchHandler(line, x, y) {
-                console.log("EVENT:LOAD::TOUCH::DOWN");
-            }
+            let restartImg = document.createElement("img");
+            restartImg.setAttribute("src", "repeat.png");
+            let w = getWidth() * 0.05;
+            restartImg.setAttribute(
+                "style",
+                `width: ${w}px;
+                    height: ${w}px;`
+            );
+            restart.appendChild(restartImg);
 
-            function moveHandler(subLine, pos, x, y, rotation, width, height) {
-                console.log("EVENT:LOAD::MOVE (", pos.x, x, ")", " (", pos.y,y,")", "(",width, height,")");
-                let color = subLine.style.backgroundColor;
+            restart.addEventListener("click", () => {
+                document.body.innerHTML = "";
+                onLoad();
+            });
 
-                let cornerRadius = height / 2;
+            divComp.appendChild(restart);
+            root.appendChild(divComp);
+        }
 
-                let w;
+        function touchHandler(line, x, y) {
+            console.log("EVENT:LOAD::TOUCH::DOWN");
+        }
 
-                if (rotation > 45 && rotation < 135) {  // Y-axis
-                    w = y - pos.y;
-                } else { // X-axis
+        function moveHandler(subLine,
+            pos,
+            x,
+            y,
+            rotation,
+            width,
+            height,
+            deltaOffset
+        ) {
+
+            console.log("EVENT:LOAD::MOVE (", pos.x, x, ")", " (", pos.y, y, ")", "(", width, height, ")");
+            let color = subLine.style.backgroundColor;
+
+            let cornerRadius = height / 2;
+
+            let w;
+
+
+            if (rotation > 45 && rotation < 135) {  // Y-axis
+                w = y - pos.y;
+            } else { // X-axis
+                if (calcWithX) {
                     if (rotation < 45) {
                         w = x - pos.x;
                     } else {
                         w = pos.x - x;
                     }
-                    w += cornerRadius;
                 }
+            }
+            w += deltaOffset;
+            subLine.setAttribute(
+                "style",
+                `height:${height}px;
+                            width:${w}px;
+                            border-radius: ${cornerRadius}px;
+                            position: absolute;
+                        `);
+            subLine.style.backgroundColor = color;
+        }
 
-                subLine.setAttribute(
-                    "style",
-                    `height:${height}px;
-                    width:${w}px;
-                    border-radius: ${cornerRadius}px;
-                    position: absolute;
-                `);
-                subLine.style.backgroundColor = color;
+        function createLine(pos, width, height, rotationAngle, r, g, b, id) {
+            let line = document.createElement("div");
+            line.id = "line" + id;
+            line.className = "line" + id;
+
+            root.appendChild(line);
+
+            let radians = 3.14159 * rotationAngle / 180;
+            let cose = Math.cos(radians);
+            let sine = Math.sin(radians);
+
+            let midw = width * 0.5;
+            let midh = height * 0.5;
+
+            let xc = -midw;
+            let yc = 0;
+
+            let xcen = pos.x + midw;
+            let ycen = pos.y + midw;
+
+            let rotatedPos = {
+                x: xc * cose - yc * sine + xcen - 10,
+                y: xc * sine + yc * cose + ycen + xc
+            };
+
+            line.setAttribute(
+                "style",
+                `height:${height}px;
+                            width:${width}px;
+                            border-radius: ${midh}px;
+                            left: ${pos.x}px;
+                            top: ${pos.y}px;
+                            transform: rotate(${rotationAngle}deg);
+                            position: absolute;
+                        `);
+
+            let subLine = document.createElement("div");
+            subLine.id = "subLine" + id;
+            subLine.className = "subLine" + id;
+
+            subLine.setAttribute(
+                "style",
+                `height:${height}px;
+                            width:${10}px;
+                            border-radius: ${midh}px;
+                            position: absolute;
+                        `);
+
+            line.addEventListener("mousedown", (event) => {
+                isTouchDowned = true;
+                touchHandler(line, event.clientX, event.clientY);
+            });
+
+            var deltaOffset = 0;
+
+            var xd = 0;
+
+            if (rotatedPos.x > pos.x + midw) {
+                xd = rotatedPos.x - pos.x;
+            } else {
+                xd = pos.x - rotatedPos.x;
             }
 
-            function getWidth() {
-                return Math.max(
-                    document.body.scrollWidth,
-                    document.documentElement.scrollWidth,
-                    document.body.offsetWidth,
-                    document.documentElement.offsetWidth,
-                    document.documentElement.clientWidth
-                );
+            if (rotatedPos.y > pos.y + midh) {
+                deltaOffset = rotatedPos.y - pos.y;
+            } else {
+                deltaOffset = pos.y - rotatedPos.y;
             }
 
-            function getHeight() {
-                return Math.max(
-                    document.body.scrollHeight,
-                    document.documentElement.scrollHeight,
-                    document.body.offsetHeight,
-                    document.documentElement.offsetHeight,
-                    document.documentElement.clientHeight
-                );
-            }
+            deltaOffset = Math.max(deltaOffset, xd);
 
-            function createLine(pos, width, height, rotationAngle,r,g,b, id) {
-                let line = document.createElement("div");
-                line.id = "line" + id;
-                line.className = "line" + id;
+            line.addEventListener("mousemove", (event) => {
+                if (isTouchDowned) {
+                    moveHandler(subLine,
+                        rotatedPos,
+                        event.clientX,
+                        event.clientY,
+                        rotationAngle,
+                        width,
+                        height,
+                        0);
+                }
+            });
 
-                root.appendChild(line);
+            let handleCancel = () => {
+                isTouchDowned = false;
+                // check line's progress
 
-                let radians = 3.14159 * rotationAngle / 180;
-                let cose = Math.cos(radians);
-                let sine = Math.sin(radians);
-
-                let xc = width * -0.5;
-                let yc = 0;
-
-                let xcen = pos.x - xc;
-                let ycen = pos.y - xc;
-
-                let rotatedPos = {
-                    x: xc * cose - yc * sine + xcen - 10,
-                    y: xc * sine + yc * cose + ycen + xc
-                };
-
-                line.setAttribute(
-                    "style",
-                    `height:${height}px;
-                    width:${width}px; 
-                    border-radius: ${height / 2}px;
-                    left: ${pos.x}px; 
-                    top: ${pos.y}px;
-                    transform: rotate(${rotationAngle}deg);
-                    position: absolute;
-                `);
-
-                let subLine = document.createElement("div");
-                subLine.id = "subLine" + id;
-                subLine.className = "subLine" + id;
-
-                subLine.setAttribute(
-                    "style",
-                    `height:${height}px;
-                    width:${width / 2}px; 
-                    border-radius: ${height / 2}px;
-                    position: absolute;
-                `);
-
-                line.addEventListener("mousedown", (event) => {
-                    isTouchDowned = true;
-                    touchHandler(line, event.x, event.y);
-                });
-
-                line.addEventListener("mousemove", (event) => {
-                    if (isTouchDowned) {
-                        moveHandler(subLine,
-                            rotatedPos,
-                            event.x,
-                            event.y,
-                            rotationAngle,
-                            width,
-                            height);
+                for (let i = 0; i < mLines.length; i++) {
+                    let lineInfo = mLines[i];
+                    let progress = parseInt(lineInfo.line.style.width) / lineInfo.maxProgress;
+                    if (progress < 0.7) {
+                        return;
                     }
-                });
-
-                let handleCancel = () => {
-                    isTouchDowned = false;
-                    // check line's progress
-
-                    for (let i = 0; i < mLines.length; i++) {
-                        let lineInfo = mLines[i];
-                        let progress = parseInt(lineInfo.line.style.width) / lineInfo.maxProgress;
-                        if (progress < 0.7) {
-                            return;
-                        }
-                    }
-
-                    completion();
-
-                };
-
-                line.addEventListener("mouseup", handleCancel);
-                line.addEventListener("mouseleave", handleCancel);
-
-                line.appendChild(subLine);
-
-                if (DEBUG_MODE) {
-
-                    let divDebug = document.createElement("div");
-                    divDebug.id = "debug" + id;
-                    divDebug.className = "debugClass" + id;
-
-                    divDebug.setAttribute("style", 'width:20px;height:20px;position:absolute');
-
-                    divDebug.style.left = rotatedPos.x + "px";
-                    divDebug.style.top = rotatedPos.y + "px";
-
-                    root.appendChild(divDebug);
-                    divDebug.style.backgroundColor = "#ff00ff";
-
-                    let divDebugg = document.createElement("div");
-                    divDebugg.id = "debugg" + id;
-                    divDebugg.className = "debuggClass" + id;
-
-                    divDebugg.setAttribute("style", 'width:20px;height:20px;position:absolute');
-
-                    divDebugg.style.left = pos.x + "px";
-                    divDebugg.style.top = pos.y + "px";
-
-                    root.appendChild(divDebugg);
-                    divDebugg.style.backgroundColor = "#ff5555";
                 }
 
-                subLine.style.backgroundColor = "#ffffff";
-
-
-                let rgb = [r, g, b].join(',');
-                line.style
-                    .backgroundColor = `rgb(${rgb})`;
-                console.log(id, rotatedPos, pos);
-                mLines.push({ line: subLine, maxProgress: width });
-                //line.style.transform = rotate(rotationAngle);
-            }
-
-            function onLoad() {
-                console.log("EVENT::LOAD");
-
-                root = document.getElementById("main");
-                root.style.backgroundColor = "#000325";
-
-                let maxStrokeWidth = 25;
-                let maxLength = getWidth() * 0.1;
-                let width = getWidth() - maxStrokeWidth - maxLength;
-                let height = getHeight() - maxStrokeWidth - maxLength;
-
-                let maxRot = 180;
-
-                for (var i = 0; i < 25; i++) {
-                    createLine(
-                        {
-                            x: width * Math.random(), // posX
-                            y: height * Math.random() // posY
-                        }, 
-                        maxLength * Math.random()+15, // width
-                        maxStrokeWidth * Math.random() + 15, // height
-                        maxRot * Math.random(), // rotation angle
-                        255 * Math.random(), // red
-                        255 * Math.random(), // green
-                        255 * Math.random(), // blue
-                        i); // hex-color
-                }
-
-                console.log("EVENT:LOAD::FINISH");
                 completion();
+
+            };
+
+            line.addEventListener("mouseup", handleCancel);
+            line.addEventListener("mouseleave", handleCancel);
+
+            line.appendChild(subLine);
+
+            if (DEBUG_MODE) {
+
+                let divDebug = document.createElement("div");
+                divDebug.id = "debug" + id;
+                divDebug.className = "debugClass" + id;
+
+                divDebug.setAttribute("style", 'width:20px;height:20px;position:absolute');
+
+                divDebug.style.left = rotatedPos.x + "px";
+                divDebug.style.top = rotatedPos.y + "px";
+
+                root.appendChild(divDebug);
+                divDebug.style.backgroundColor = "#ff00ff";
+
+                let divDebugg = document.createElement("div");
+                divDebugg.id = "debugg" + id;
+                divDebugg.className = "debuggClass" + id;
+
+                divDebugg.setAttribute("style", 'width:20px;height:20px;position:absolute');
+
+                divDebugg.style.left = pos.x + "px";
+                divDebugg.style.top = pos.y + "px";
+
+                root.appendChild(divDebugg);
+                divDebugg.style.backgroundColor = "#ff5555";
             }
 
-        </script>
-    </head>
+            line.style
+                .backgroundColor = 'rgba(255,255,255,0.2)';
 
-    <body onload="onLoad()" id="main"
-          ondragstart="return false;"
-          ondrop="return false;">
+            subLine.style.backgroundColor = rgbStr(r, g, b);
 
-    </body>
+            console.log(id, rotatedPos, pos);
+            mLines.push({ line: subLine, maxProgress: width });
+            //line.style.transform = rotate(rotationAngle);
+        }
+
+        function onLoad() {
+            console.log("EVENT::LOAD");
+
+            root = document.getElementById("main");
+            root.style.backgroundColor = "#000325";
+
+            let maxStrokeWidth = 25;
+            let maxLength = getWidth() * 0.1;
+            let width = getWidth() - maxStrokeWidth - maxLength;
+            let height = getHeight() - maxStrokeWidth - maxLength;
+
+            let maxRot = 180;
+
+            let minLength = maxLength * 0.5;
+
+            for (var i = 0; i < 1; i++) {
+                let strokeWidth = maxStrokeWidth * Math.random() + 15;
+                createLine(
+                    {
+                        x: width * Math.random(), // posX
+                        y: height * Math.random() // posY
+                    },
+                    maxLength * Math.random() + minLength, // width
+                    strokeWidth, // height
+                    maxRot * Math.random(), // rotation angle
+                    255 * Math.random(), // red
+                    255 * Math.random(), // green
+                    255 * Math.random(), // blue
+                    i); // hex-color
+            }
+
+            console.log("EVENT:LOAD::FINISH");
+            //completion();
+        }
+
+        function getWidth() {
+            return Math.max(
+                document.body.scrollWidth,
+                document.documentElement.scrollWidth,
+                document.body.offsetWidth,
+                document.documentElement.offsetWidth,
+                document.documentElement.clientWidth
+            );
+        }
+
+        function getHeight() {
+            return Math.max(
+                document.body.scrollHeight,
+                document.documentElement.scrollHeight,
+                document.body.offsetHeight,
+                document.documentElement.offsetHeight,
+                document.documentElement.clientHeight
+            );
+        }
+
+    </script>
+</head>
+
+<body onload="onLoad()" id="main"
+      ondragstart="return false;"
+      ondrop="return false;">
+
+</body>
 
 </html>
